@@ -1,7 +1,13 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { AppContext } from "../../context/AppContext";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 const Login = () => {
   const [state, setState] = useState("Sign Up");
+  const navigate = useNavigate();
+  const {backendUrl, setIsLoggedin, getUserData} = useContext(AppContext)
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -14,13 +20,47 @@ const Login = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log(formData);
+  const handleSubmit = async (e) => {
+    try {
+      e.preventDefault();
+
+      // send cookies
+      axios.defaults.withCredentials = true;
+
+      if(state === "Sign Up") {
+        const {data} = await axios.post(backendUrl + "/api/auth/register", formData)
+        if(data.success){
+          setIsLoggedin(true)
+          getUserData()
+          navigate("/")
+        }
+        else{
+          toast.error(error.message)
+        }
+      }else {
+        const {data} = await axios.post(backendUrl + "/api/auth/login", formData)
+        if(data.success){
+          setIsLoggedin(true)
+          getUserData()
+          navigate("/")
+        }
+        else{
+          toast.error(error.message)
+        }
+      }     
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   return (
     <div className="flex justify-center items-center h-screen bg-gradient-to-br from-gray-500 to-gray-900">
+      <h1
+        onClick={() => navigate("/")}
+        className="text-2xl font-bold text-white absolute top-5 left-5 cursor-pointer"
+      >
+        Logo
+      </h1>
       <div className="bg-white p-5 rounded-md w-[400px]">
         {state === "Sign Up" ? (
           <h1 className="text-2xl font-bold text-gray-800 text-center">
@@ -40,6 +80,7 @@ const Login = () => {
               onChange={handleChange}
               className="border p-2 rounded-md"
               placeholder="Full Name"
+              name="fullName"
             />
           )}
           <input
@@ -49,6 +90,7 @@ const Login = () => {
             onChange={handleChange}
             className="border p-2 rounded-md"
             placeholder="Email"
+            name="email"
           />
           <input
             type="password"
@@ -57,8 +99,15 @@ const Login = () => {
             onChange={handleChange}
             className="border p-2 rounded-md"
             placeholder="Password"
+            name="password"
+            
           />
-          <p>Forgot Password?</p>
+          <p
+            onClick={() => navigate("/reset-password")}
+            className="cursor-pointer"
+          >
+            Forgot Password?
+          </p>
           <button
             type="submit"
             className="bg-gray-800 text-white p-2 rounded-md"
